@@ -1,20 +1,39 @@
 #!/usr/bin/env python
 #encoding=utf-8
 
-import tornado.ioloop
-import tornado.web
+import Base
+import func
 
-class Home(tornado.web.RequestHandler):
+class Home(Base.Handler):
     def get(self):
-        self.write("Welcome \n DlD 333")
+        self.write("Welcome DlD v1.0\n");
         
+class Test(Base.Handler):
+    
+    #@tornado.web.asynchronous
+    def get(self):
+        #self.file_get_content("http://www.baidu.com");
+        #self.file_get_content_asyn("http://www.baidu.com", self.callback);
+        print "callback: " + self.get_argument("code",'404');
+        
+    def callback(self,response):
+        print "ok"
+        print len(response.body)
+        self.write("ok")
+        self.finish();
 
-class Request(tornado.web.RequestHandler):
+class Request(Base.Handler):
     def get(self):
-        self.write("xxx")
+        url = self.get_argument("url","");
+        callback = self.get_argument("callback","");
+        #print self.json_decode(data);
+        self.get_mq().add((url,callback));
+        #print self.get_mq().size();
+        info = "url: " + url + ", callback: " + callback;
+        func.log(info);
+        #self.echo_json(self.json_decode(data));
+        self.write(info);
         
-        msg = self.get_argument("message","{}")
         
-        print tornado.escape.json_decode(msg)
         
-        self.write("You wrote " + msg)
+        
