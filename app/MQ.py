@@ -1,16 +1,23 @@
 #! /usr/bin/env python
 # encoding:utf-8
 
-import threading,time,Queue,urllib
+import threading,time,Queue,urllib,hashlib,func
 
 class MQ:
     mq = Queue.Queue()
+    callbacks = {}
     
     def __init__(self):
         Worker(self).start();
+        Worker(self).start();
     
     def add(self, x):
-        self.mq.put(x, True, None);
+        data,cal = x;
+        tm = "%.2f" % time.time();
+        ret = self.callbacks.setdefault(func.parse_request(cal), tm);
+        print self.callbacks;
+        #使用上次保存的id
+        self.mq.put((data,ret), True, None);
 
     def get(self):
         return self.mq.get();
@@ -27,19 +34,31 @@ class Worker(threading.Thread):
         threading.Thread.__init__(self);
         self.daemon = True;
         self.mq = mq;
-        
+
     def run(self):
         while(True):
-            url,callback_url = self.mq.get();
-            print "receive: " + str(self.mq.size());
-            ret = self.check(url);
-            self.recall(callback_url + "&code=%s" % ret);
+            data,call_id = self.mq.get();
+            print self.getName() + " receive: " + str(self.mq.size());
+            data = func.json_decode(data);
+            ret = self.check(data['url']);
+            data['_code_'] = ret;
+            self.recall(self.get_callback(call_id), data);
             self.mq.task_done();
-        
+            
+    def get_callback(self,call_id):
+        for (k,v) in self.mq.callbacks.iteritems():
+            print "find: %s, key: %s, value: %s" % (call_id, k, v);
+            if(call_id == v):
+                return k;
+        return -1;
+
     def check(self,url):
         file = urllib.urlopen(url).getcode();
         return file;
 
-    def recall(self,url):
-        print url;
-        urllib.urlopen(url).getcode();
+    def recall(self,url,data):
+        if(url != -1):
+            func.log("[INFO ][RETURN] url:%s, data: %s" %(url, data));
+            urllib.urlopen(url + "?%s" % urllib.urlencode(data)).getcode();
+        else:
+            func.log("[ERROR][CALLBACK] empty callback, data: %s" % data);

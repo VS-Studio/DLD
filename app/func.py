@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # encoding:utf-8
-import time,os
+import time,os,json
 
 def log(str):
     ltime = time.localtime(time.time());
@@ -11,3 +11,17 @@ def log(str):
     logfile.write(log + "\n");
     logfile.close();
     print log;
+
+def json_encode(obj):
+    return json.dumps(obj);
+
+
+def json_decode(str):
+    return json.loads(str);
+
+def parse_request(url):
+    ret = url;
+    pos = url.find('?');
+    if(pos > -1):
+        ret = url[0:pos];
+    return ret;
